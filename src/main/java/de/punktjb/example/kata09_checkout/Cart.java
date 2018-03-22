@@ -31,11 +31,23 @@ public class Cart
 	 * @return
 	 */
     public Observable<Double> calculateForCart( List<String> items )
-    {        
+    {
+    		// pair container class
+        final class Pair 
+        {    	
+        		String key;
+        		int count;
+        		
+        		public Pair(String key, int count) {       			
+        			this.key = key;
+        			this.count = count;
+        		}
+        }       
+        		
     		return Observable.from(items) 			// list of items
 	        .groupBy(string -> string)			// group them
 	        .flatMap( group -> group.count().map(count -> new Pair(group.getKey(), count)) )	// create pairs (item, count)
-	        .map( pair -> calculatePriceForItem(pair.getKey(), pair.getCount()))	// convert them to price
+	        .map( pair -> calculatePriceForItem(pair.key, pair.count))	// convert them to price
 	        .reduce( (x, y) -> x+y );			// sum the prices
     }
     
@@ -146,30 +158,5 @@ public class Cart
 		);
 		
     		return container.total;
-    }
-    
-    /**
-     * Holder class - pairs of item, cart quantity 
-     * @author jurica
-     *
-     */
-    final private class Pair 
-    {    	
-    		String key;
-    		int count;
-    		
-    		public Pair(String key, int count) {
-    			
-    			this.key = key;
-    			this.count = count;
-    		}
-
-			public String getKey() {
-				return key;
-			}
-
-			public int getCount() {
-				return count;
-			}
     }
 }
