@@ -72,26 +72,30 @@ public class Cart
      */
     private Double calculatePriceForItem(final String item, final int cartQuantity)
     {
-    		int rest = cartQuantity;
-    		double total = 0.0;
+    		// container class which needs to be final for consumer
+    		class Container {
+        		int rest = cartQuantity;
+        		double total = 0.0;    			
+    		}    		
+    		final Container container = new Container();
     		
     		// return 0 if no data in prices
     		if( ! this.prices.containsKey(item ))
-    			return total;
+    			return container.total;
     		
     		// try discounts
     		if( this.discounts.containsKey(item ))
     		{
-	    		for( Integer discountQuantity : this.discounts.get(item).keySet() ) 
-	    		{
-				total += rest/discountQuantity * this.discounts.get(item).get(discountQuantity);
-				rest = rest % discountQuantity;
-			}
+    			this.discounts.get(item).keySet().stream().forEach(
+	    			discountQuantity -> {
+		    			container.total += container.rest/discountQuantity * this.discounts.get(item).get(discountQuantity);
+		    			container.rest = container.rest % discountQuantity;
+			});
     		}
     		
-    		total += rest * this.prices.get(item);
+    		container.total += container.rest * this.prices.get(item);
     	
-    		return total;
+    		return container.total;
     }
     
     /**
@@ -109,11 +113,18 @@ public class Cart
      */
     public double total()
     {
-    		// if empty do not bother to calculate
-    		if( this.items.isEmpty() )
-    			return 0.0;
-    		else
-    			return calculateForCart( this.items ).toBlocking().lastOrDefault(0.0);
+    		// container class which needs to be final for consumer
+		class Container {
+    			double total = 0.0;    			
+		}		
+		final Container container = new Container();
+		
+		calculateForCart( this.items ).subscribe(
+			t -> container.total = t,
+			(e) -> container.total = 0.0		// in case of error set 0.0
+		);
+		
+		return container.total;
     }
     
     /**
@@ -123,7 +134,18 @@ public class Cart
      */
     public double price(String items)
     {
-    		return calculateForCart(Arrays.asList(items.split(""))).toBlocking().lastOrDefault(0.0);
+    		// container class which needs to be final for consumer
+		class Container {
+			double total = 0.0;    			
+		}
+		final Container container = new Container();
+		
+		calculateForCart(Arrays.asList(items.split(""))).subscribe(
+			t -> container.total = t,
+			(e) -> container.total = 0.0		// in case of error set 0.0	
+		);
+		
+    		return container.total;
     }
     
     /**
@@ -146,16 +168,8 @@ public class Cart
 				return key;
 			}
 
-			public void setKey(String key) {
-				this.key = key;
-			}
-
 			public int getCount() {
 				return count;
-			}
-
-			public void setCount(int count) {
-				this.count = count;
 			}
     }
 }
